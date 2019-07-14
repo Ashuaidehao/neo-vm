@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Text;
 using VMArray = Neo.VM.Types.Array;
 
 namespace Neo.VM
@@ -210,17 +211,40 @@ namespace Neo.VM
                     if (!PreExecuteInstruction() || !ExecuteInstruction() || !PostExecuteInstruction(instruction))
                         State = VMState.FAULT;
                 }
-                catch
+                catch(Exception e)
                 {
+                    Print(e);
                     State = VMState.FAULT;
                 }
             }
         }
 
+        public virtual void Print(object text)
+        {
+            Console.WriteLine(text);
+        }
+
+        private static List<OpCode> showCodes=new List<OpCode>()
+        {
+            OpCode.APPCALL,
+            OpCode.SYSCALL,
+            OpCode.EQUAL,
+            OpCode.NUMEQUAL,
+            OpCode.NUMNOTEQUAL,
+        };
+
+
+        private bool show = false;
         private bool ExecuteInstruction()
         {
             ExecutionContext context = CurrentContext;
             Instruction instruction = context.CurrentInstruction;
+            if (showCodes.Contains(instruction.OpCode) ||show)
+            {
+                Print($"Opcode({instruction.OpCode:X}):{instruction.OpCode},[{BitConverter.ToString(instruction.Operand ?? new byte[0]).Replace("-", "")}]{Encoding.UTF8.GetString(instruction.Operand ?? new byte[0])}");
+
+            }
+
             if (instruction.OpCode >= OpCode.PUSHBYTES1 && instruction.OpCode <= OpCode.PUSHDATA4)
             {
                 if (!CheckMaxItemSize(instruction.Operand.Length)) return false;
@@ -328,6 +352,9 @@ namespace Neo.VM
                             {
                                 script_hash = context.EvaluationStack.Pop().GetByteArray();
                             }
+
+                            Console.WriteLine(BitConverter.ToString(script_hash));
+                            
                             ExecutionContext context_new = LoadScriptByHash(script_hash);
                             if (context_new == null) return false;
                             context.EvaluationStack.CopyTo(context_new.EvaluationStack);
@@ -569,7 +596,14 @@ namespace Neo.VM
                         {
                             StackItem x2 = context.EvaluationStack.Pop();
                             StackItem x1 = context.EvaluationStack.Pop();
+                            Console.WriteLine($"{x1.GetString()}::{x2.GetString()}");
+                            //Console.WriteLine($"{x1.GetByteArray()}::{x2.GetByteArray()}");
+
                             context.EvaluationStack.Push(x1.Equals(x2));
+                            if (x1.Equals(x2))
+                            {
+                                show = true;
+                            }
                             CheckStackSize(false, -1);
                             break;
                         }
@@ -724,6 +758,8 @@ namespace Neo.VM
                         {
                             BigInteger x2 = context.EvaluationStack.Pop().GetBigInteger();
                             BigInteger x1 = context.EvaluationStack.Pop().GetBigInteger();
+
+                            Console.WriteLine(BitConverter.ToString(x1.ToByteArray())+"::"+ BitConverter.ToString(x2.ToByteArray()));
                             context.EvaluationStack.Push(x1 == x2);
                             CheckStackSize(true, -1);
                             break;
