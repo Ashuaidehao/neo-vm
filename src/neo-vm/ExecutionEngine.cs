@@ -234,12 +234,11 @@ namespace Neo.VM
         };
 
 
-        private bool show = false;
         private bool ExecuteInstruction()
         {
             ExecutionContext context = CurrentContext;
             Instruction instruction = context.CurrentInstruction;
-            if (showCodes.Contains(instruction.OpCode) ||show)
+            if (showCodes.Contains(instruction.OpCode))
             {
                 Print($"Opcode({instruction.OpCode:X}):{instruction.OpCode},[{BitConverter.ToString(instruction.Operand ?? new byte[0]).Replace("-", "")}]{Encoding.UTF8.GetString(instruction.Operand ?? new byte[0])}");
 
@@ -597,13 +596,9 @@ namespace Neo.VM
                             StackItem x2 = context.EvaluationStack.Pop();
                             StackItem x1 = context.EvaluationStack.Pop();
                             Console.WriteLine($"{x1.GetString()}::{x2.GetString()}");
-                            //Console.WriteLine($"{x1.GetByteArray()}::{x2.GetByteArray()}");
 
                             context.EvaluationStack.Push(x1.Equals(x2));
-                            if (x1.Equals(x2))
-                            {
-                                show = true;
-                            }
+
                             CheckStackSize(false, -1);
                             break;
                         }
